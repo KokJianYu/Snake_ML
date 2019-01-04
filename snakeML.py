@@ -1,10 +1,10 @@
 import tkinter
+import random
+import functools
+
 BLOCK_SIZE = 20
 MOVEMENT = 20
-
-
-master = tkinter.Tk()
-canvas = tkinter.Canvas(master, bg="black", height=800, width=800)
+BOARD_SIZE = 800
 
 
 class Snake:
@@ -12,49 +12,117 @@ class Snake:
     positionY = 200
     speedX = 0
     speedY = 0
-    length = 2
-    rectOnCanvas = []
+    length = 5
+    blocksInCanvas = []
+    canvas = None
 
-    def MoveLeft(self, event):
+    def __init__(self, canvas):
+        self.canvas = canvas
+
+    def moveLeft(self, event):
         self.speedX = -MOVEMENT
         self.speedY = 0
 
-    def MoveRight(self, event):
+    def moveRight(self, event):
         self.speedX = MOVEMENT
         self.speedY = 0
 
-    def MoveUp(self, event):
+    def moveUp(self, event):
         self.speedX = 0
         self.speedY = -MOVEMENT
 
-    def MoveDown(self, event):
+    def moveDown(self, event):
         self.speedX = 0
         self.speedY = MOVEMENT
 
+    def updateMovement(self):
+        self.positionX += snake.speedX
+        self.positionY += snake.speedY
+        if(self.positionX >= BOARD_SIZE):
+            self.positionX -= BOARD_SIZE
+        elif(self.positionX < 0):
+            self.positionX += BOARD_SIZE
+        if(self.positionY >= BOARD_SIZE):
+            self.positionY -= BOARD_SIZE
+        elif(self.positionY < 0):
+            self.positionY += BOARD_SIZE
 
-snake = Snake()
+    def render(self):
+        self.blocksInCanvas.append(canvas.create_rectangle(self.positionX, self.positionY,
+                                                           self.positionX+BLOCK_SIZE,
+                                                           self.positionY+BLOCK_SIZE,
+                                                           fill="white"))
+        if self.length < self.blocksInCanvas.__len__():
+            toDelete = self.blocksInCanvas.pop(0)
+            canvas.delete(toDelete)
+
+    def eat(self, food):
+        self.length += 1
+        food.eaten()
+
+
+class Food:
+    positionX = 0
+    positionY = 0
+    canvasId = None
+    canvas = None
+
+    def __init__(self, canvas):
+        self.canvas = canvas
+        first_pass = True
+        while snakeCollidedOnFood(snake, self) | first_pass:
+            first_pass = False
+            self.positionX = random.randint(
+                0, BOARD_SIZE/BLOCK_SIZE) * BLOCK_SIZE
+            self.positionY = random.randint(
+                0, BOARD_SIZE/BLOCK_SIZE) * BLOCK_SIZE
+
+    def render(self):
+        self.canvasId = canvas.create_rectangle(self.positionX, self.positionY,
+                                                self.positionX+BLOCK_SIZE,
+                                                self.positionY+BLOCK_SIZE,
+                                                fill="red")
+
+    def eaten(self):
+        canvas.delete(self.canvasId)
+        self = None
+
+
+def snakeCollidedOnFood(snake, food):
+    for block in snake.blocksInCanvas:
+        blockCoor = canvas.coords(block)
+        # blockCoor is a tuple(x1,y1,x2,y2)
+        if((food.positionX == blockCoor[0]) & (food.positionY == blockCoor[1])):
+            return True
+    return False
+
+
 def gameLoop():
-    snake.positionX += snake.speedX
-    snake.positionY += snake.speedY
-    snake.rectOnCanvas.append(canvas.create_rectangle(snake.positionX, snake.positionY, 
-                              snake.positionX+BLOCK_SIZE,
-                              snake.positionY+BLOCK_SIZE, 
-                              fill="white"))
-    if snake.length < snake.rectOnCanvas.__len__():
-        toDelete = snake.rectOnCanvas.pop(0)
-        canvas.delete(toDelete)
-    print("{0}:{1}\n".format(snake.positionX, snake.positionY))
-    print("{0}:{1}".format(snake.speedX, snake.speedY))
-    master.after(200, gameLoop)
+    global snake
+    global food
+    global canvas
+    if snakeCollidedOnFood(snake, food):
+        snake.eat(food)
+        food = Food(canvas)
+        food.render()
+    snake.updateMovement()
+    snake.render()
+    master.after(100, gameLoop)
 
 
-master.bind('<Left>', snake.MoveLeft)
-master.bind('<Right>', snake.MoveRight)
-master.bind('<Up>', snake.MoveUp)
-master.bind('<Down>', snake.MoveDown)
-snake.rectOnCanvas.append(canvas.create_rectangle(snake.positionX, snake.positionY, 
-                        snake.positionX+BLOCK_SIZE, snake.positionY+BLOCK_SIZE, 
-                        fill="white"))
-master.after(1000, gameLoop)
+master = tkinter.Tk()
+canvas = tkinter.Canvas(
+    master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
+snake = Snake(canvas)
+food = Food(canvas)
+snake.render()
+food.render()
+master.bind('<Left>', snake.moveLeft)
+master.bind('<Right>', snake.moveRight)
+master.bind('<Up>', snake.moveUp)
+master.bind('<Down>', snake.moveDown)
+master.after(100, gameLoop)
 canvas.grid()
 master.mainloop()
+
+# https://stackoverflow.com/questions/19895877/tkinter-cant-bind-arrow-key-events Try this
