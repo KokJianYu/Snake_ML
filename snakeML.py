@@ -125,4 +125,3 @@ master.after(100, gameLoop)
 canvas.grid()
 master.mainloop()
 
-# https://stackoverflow.com/questions/19895877/tkinter-cant-bind-arrow-key-events Try this
