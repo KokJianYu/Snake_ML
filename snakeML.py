@@ -6,7 +6,6 @@ BLOCK_SIZE = 20
 MOVEMENT = 20
 BOARD_SIZE = 800
 
-
 class Snake:
     LEFT = -1
     RIGHT = 1
@@ -84,8 +83,6 @@ class Snake:
 
 
 class Food:
-    canvasId = None
-    canvas = None
 
     def __init__(self, canvas):
         global snake
@@ -164,21 +161,27 @@ def gameLoop():
     snake.render()
     master.after(100, gameLoop)
 
-global snake
-global food
-global canvas
-master = tkinter.Tk()
-canvas = tkinter.Canvas(
-    master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
-snake = Snake(canvas)
-food = Food(canvas)
-snake.render()
-food.render()
-master.bind('<Left>', snake.moveLeft)
-master.bind('<Right>', snake.moveRight)
-master.bind('<Up>', snake.moveUp)
-master.bind('<Down>', snake.moveDown)
-master.after(100, gameLoop)
-canvas.grid()
-master.mainloop()
+def startGame(): 
+    global snake
+    global food
+    global canvas
+    global master
+    global canvas
+    master = tkinter.Tk()
+    canvas = tkinter.Canvas(
+        master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
+    snake = Snake(canvas)
+    food = Food(canvas)
+    snake.render()
+    food.render()
+    master.bind('<Left>', snake.moveLeft)
+    master.bind('<Right>', snake.moveRight)
+    master.bind('<Up>', snake.moveUp)
+    master.bind('<Down>', snake.moveDown)
+    master.after(100, gameLoop)
+    canvas.grid()
+    master.mainloop()
+
+if __name__ == '__main__':
+    startGame()
 
