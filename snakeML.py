@@ -6,7 +6,8 @@ import numpy as np
 BLOCK_SIZE = 20
 MOVEMENT = 20
 BOARD_SIZE = 800
-
+SNAKE_BODY_TAG = 0
+FOOD_TAG = 1
 
 class Snake:
     UP = 0
@@ -67,27 +68,22 @@ class Snake:
         self.directionInput = self.NO_DIRECTION
         self.position[0] += snake.speedX
         self.position[1] += snake.speedY
-        if(self.position[0] >= BOARD_SIZE):
-            self.position[0] -= BOARD_SIZE
-        elif(self.position[0] < 0):
-            self.position[0] += BOARD_SIZE
-        if(self.position[1] >= BOARD_SIZE):
-            self.position[1] -= BOARD_SIZE
-        elif(self.position[1] < 0):
-            self.position[1] += BOARD_SIZE
 
     def isMovingInOppositeDirection(self, newDirection):
-        if((newDirection + 2) % 4 == self.currentDirection):
-            return True
+        #Commented to teach snakes.
+        #if((newDirection + 2) % 4 == self.currentDirection):
+        #    return True
+        #return False
         return False
 
     def render(self):
         self.blocksInCanvas.append(canvas.create_rectangle(self.position[0], self.position[1],
                                                            self.position[0] +
-                                                           BLOCK_SIZE,
+                                                           BLOCK_SIZE-1,
                                                            self.position[1] +
-                                                           BLOCK_SIZE,
-                                                           fill="white"))
+                                                           BLOCK_SIZE-1,
+                                                           fill="white", 
+                                                           tags=SNAKE_BODY_TAG))
         if self.length < len(self.blocksInCanvas):
             toDelete = self.blocksInCanvas.pop(0)
             canvas.delete(toDelete)
@@ -113,9 +109,12 @@ class Food:
 
     def render(self):
         self.canvasId = canvas.create_rectangle(self.position[0], self.position[1],
-                                                self.position[0]+BLOCK_SIZE,
-                                                self.position[1]+BLOCK_SIZE,
-                                                fill="red")
+                                                self.position[0] +
+                                                BLOCK_SIZE-1,
+                                                self.position[1] +
+                                                BLOCK_SIZE-1,
+                                                fill="red", 
+                                                tags=FOOD_TAG)
 
     def eaten(self):
         canvas.delete(self.canvasId)
@@ -128,6 +127,12 @@ def snakeCollidedOnFood(snake, food):
         # blockCoor is a tuple(x1,y1,x2,y2)
         if(isCollided(food.position[0], food.position[1], blockCoor[0], blockCoor[1])):
             return True
+    return False
+
+
+def snakeCollidedOnWall(snake):
+    if(snake.position[0] >= BOARD_SIZE or snake.position[0] < 0 or snake.position[1] >= BOARD_SIZE or snake.position[1] < 0):
+        return True
     return False
 
 
@@ -173,17 +178,26 @@ def gameLoop():
         food.render()
     if snakeCollidedOnTail(snake):
         resetBoard()
+    if snakeCollidedOnWall(snake):
+        resetBoard()
     snake.updateMovement()
     snake.render()
     master.after(100, gameLoop)
 
 
 def startGame():
+    master.after(100, gameLoop)
+    canvas.grid()
+    master.mainloop()
+
+
+def newGame():
     global snake
     global food
     global canvas
     global master
     global canvas
+
     master = tkinter.Tk()
     canvas = tkinter.Canvas(
         master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
@@ -195,12 +209,10 @@ def startGame():
     master.bind('<Right>', snake.moveRight)
     master.bind('<Up>', snake.moveUp)
     master.bind('<Down>', snake.moveDown)
-    master.after(100, gameLoop)
-    canvas.grid()
-    master.mainloop()
 
 
 if __name__ == '__main__':
+    newGame()
     startGame()
 
 
@@ -234,49 +246,64 @@ def snakeMoveRight():
     snake.move(direction)
 
 
-actions = [snakeMoveLeft, snakeMoveFront, snakeMoveRight]
-
-
 def nextStep(actionToDo):
     actions[actionToDo]()
     gameLoopML()
+    return score, gameEnded
 
 
 def startGameML():
-    global snake
-    global food
-    global canvas
-    global master
-    global canvas
-    master = tkinter.Tk()
-    canvas = tkinter.Canvas(
-        master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
-    snake = Snake(canvas)
-    food = Food(canvas)
-    snake.render()
-    food.render()
-    master.bind('<Left>', snake.moveLeft)
-    master.bind('<Right>', snake.moveRight)
-    master.bind('<Up>', snake.moveUp)
-    master.bind('<Down>', snake.moveDown)
     canvas.grid()
-    master.update()  # Will only update when a step is given.
+    gameLoopML()
 
 
 def gameLoopML():
     global snake
     global food
     global canvas
+    global score
+    global gameEnded
     if snakeCollidedOnFood(snake, food):
+        score += 1
         snake.eat(food)
         food = Food(canvas)
         food.render()
     if snakeCollidedOnTail(snake):
-        resetBoard()
+        gameEnded = True
+        score -= 20
+    if snakeCollidedOnWall(snake):
+        gameEnded = True
+        score -= 20
     snake.updateMovement()
     snake.render()
     updateInputLayer()
+    # master.update()
 
+
+def exit():
+    master.destroy()
+
+
+
+def lookInDirection(snake, vectorX, vectorY):
+    global canvas
+    # 0 -> food 1 -> tail 2 -> wall
+    itemsInDirection = np.empty(3)
+    currentPosition = snake.position
+    currentPosition += [vectorX, vectorY]
+    distance = 0
+    while not (currentPosition[0] < 0 or currentPosition[0] > BOARD_SIZE or currentPosition[1] < 0 or currentPosition[1] > BOARD_SIZE):
+        distance += 1
+        itemsInCurrentPosition = canvas.find_overlapping(currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE, currentPosition[1]+BLOCK_SIZE)
+        for item in itemsInCurrentPosition:
+            tag = canvas.gettags(item)[0]
+            if tag == FOOD_TAG:
+                itemsInDirection[0] = 1 / distance
+            if tag == SNAKE_BODY_TAG:
+                itemsInDirection[1] = 1 / distance
+    itemsInDirection[2] = 1 / distance
+    return itemsInDirection
+    
 
 def updateInputLayer():
     global input_snake_direction_vector_x
@@ -289,16 +316,22 @@ def updateInputLayer():
 
     global snake
     global food
-    global canvase
+    global canvas
 
     # Normalize value to be either -1 or 1
-    snake_direction_vector_norm = np.linalg.norm([snake.speedX, snake.speedY])
+    snake_direction_vector_norm = np.linalg.norm(
+        [snake.speedX, snake.speedY])
+    snake_direction_vector_norm = 1 if snake_direction_vector_norm == 0 else snake_direction_vector_norm
     input_snake_direction_vector_x = snake.speedX / snake_direction_vector_norm
     input_snake_direction_vector_y = snake.speedY / snake_direction_vector_norm
-    
-    food_from_snake_vector_norm = np.linalg.norm(np.asarray(food.position) - np.asarray(snake.position))
-    input_food_from_snake_vector_x = (food.position[0] - snake.position[0]) / food_from_snake_vector_norm
-    input_food_from_snake_vector_y = (food.position[1] - snake.position[1]) / food_from_snake_vector_norm
+
+    food_from_snake_vector_norm = np.linalg.norm(
+        np.asarray(food.position) - np.asarray(snake.position))
+    food_from_snake_vector_norm = 1 if food_from_snake_vector_norm == 0 else food_from_snake_vector_norm
+    input_food_from_snake_vector_x = (
+        food.position[0] - snake.position[0]) / food_from_snake_vector_norm
+    input_food_from_snake_vector_y = (
+        food.position[1] - snake.position[1]) / food_from_snake_vector_norm
     input_snake_left_blocked = False
     input_snake_right_blocked = False
     input_snake_front_blocked = False
@@ -336,3 +369,29 @@ def isNextDirectionBlocked(snake):
         if (isCollided(nextBlockPosition[0], nextBlockPosition[1], blockCoor[0], blockCoor[1])):
             return True
     return False
+
+
+def newGameML():
+    global actions
+    global gameEnded
+    global snake
+    global food
+    global canvas
+    global master
+    global canvas
+    global score
+
+    score = 0
+    actions = [snakeMoveLeft, snakeMoveFront, snakeMoveRight]
+    gameEnded = False
+    master = tkinter.Tk()
+    canvas = tkinter.Canvas(
+        master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
+    snake = Snake(canvas)
+    food = Food(canvas)
+    snake.render()
+    food.render()
+    master.bind('<Left>', snake.moveLeft)
+    master.bind('<Right>', snake.moveRight)
+    master.bind('<Up>', snake.moveUp)
+    master.bind('<Down>', snake.moveDown)
