@@ -105,7 +105,7 @@ for i in range(1, num_of_gens):
             output = np.argmax(output)
             len[j], game_ended = snakeML.nextStep(output)
             num_steps += 1
-        fitness[j] = calcFitness(len, num_steps)
+        fitness[j] = calcFitness(len[j], num_steps)
         snakeML.exit()
         updateCanvas(txtbox_training_id, i, j, fitness[j], len[j])
     best_person = np.argmax(fitness)
