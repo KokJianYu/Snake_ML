@@ -65,7 +65,6 @@ scoreScreenCanvas = tkinter.Canvas(
 scoreScreenCanvas.pack()
 txtbox_trained_id = scoreScreenCanvas.create_text(250, 20, text=f"Generation: 0, Snake: 0, Fitness: 0, Length: 0")
 txtbox_training_id = scoreScreenCanvas.create_text(250, 120, text=f"Generation: 0, Snake: 0, Fitness: training")
-spinner = spinner.Spinner()
 
 GeneticAlgo = geneticAlgo.GeneticAlgo()
 num_of_gens = 20
@@ -106,7 +105,7 @@ for i in range(1, num_of_gens):
             output = np.argmax(output)
             len[j], game_ended = snakeML.nextStep(output)
             num_steps += 1
-        fitness = calcFitness(len, num_steps)
+        fitness[j] = calcFitness(len, num_steps)
         snakeML.exit()
         updateCanvas(txtbox_training_id, i, j, fitness[j], len[j])
     best_person = np.argmax(fitness)
