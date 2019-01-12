@@ -6,8 +6,8 @@ import numpy as np
 BLOCK_SIZE = 20
 MOVEMENT = 20
 BOARD_SIZE = 800
-SNAKE_BODY_TAG = 0
-FOOD_TAG = 1
+SNAKE_BODY_TAG = "0"
+FOOD_TAG = "1"
 
 class Snake:
     UP = 0
@@ -216,7 +216,8 @@ if __name__ == '__main__':
     startGame()
 
 
-# The following code are used for machine learning for the snake AI
+#################### The following code are used for machine learning for the snake AI ###############################################
+
 global input_snake_direction_vector_x
 global input_snake_direction_vector_y
 global input_food_from_snake_vector_x
@@ -247,14 +248,21 @@ def snakeMoveRight():
 
 
 def nextStep(actionToDo):
-    actions[actionToDo]()
+    global snake
+    actions[actionToDo](snake)
     gameLoopML()
-    return score, gameEnded
+    return snake.length, gameEnded
 
 
-def startGameML():
+def startGameML(showGui=True):
+    global displaySnakeCanvas
+    displaySnakeCanvas = showGui
+    if not displaySnakeCanvas:
+        master.withdraw()
     canvas.grid()
     gameLoopML()
+
+import time
 
 
 def gameLoopML():
@@ -277,8 +285,10 @@ def gameLoopML():
     snake.updateMovement()
     snake.render()
     updateInputLayer()
-    # master.update()
-
+    master.update()
+    global displaySnakeCanvas
+    if displaySnakeCanvas:
+        time.sleep(0.1)
 
 def exit():
     master.destroy()
@@ -288,77 +298,78 @@ def exit():
 def lookInDirection(snake, vectorX, vectorY):
     global canvas
     # 0 -> food 1 -> tail 2 -> wall
-    itemsInDirection = np.empty(3)
+    itemsInDirection = np.zeros(3)
     currentPosition = snake.position
-    currentPosition += [vectorX, vectorY]
     distance = 0
-    while not (currentPosition[0] < 0 or currentPosition[0] > BOARD_SIZE or currentPosition[1] < 0 or currentPosition[1] > BOARD_SIZE):
-        distance += 1
-        itemsInCurrentPosition = canvas.find_overlapping(currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE, currentPosition[1]+BLOCK_SIZE)
+    currentPosition += np.asarray([vectorX, vectorY])
+    distance += 1
+    foodFound = False
+    tailFound = False
+    while not(currentPosition[0] >= BOARD_SIZE or currentPosition[0] < 0 or currentPosition[1] >= BOARD_SIZE or currentPosition[1] < 0):
+        itemsInCurrentPosition = canvas.find_overlapping(currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE-1, currentPosition[1]+BLOCK_SIZE-1)
         for item in itemsInCurrentPosition:
             tag = canvas.gettags(item)[0]
-            if tag == FOOD_TAG:
-                itemsInDirection[0] = 1 / distance
-            if tag == SNAKE_BODY_TAG:
+            if not foodFound and tag == FOOD_TAG:
+                itemsInDirection[0] = 1
+                foodFound = True
+            if not tailFound and tag == SNAKE_BODY_TAG:
                 itemsInDirection[1] = 1 / distance
+                tailFound = True
+        currentPosition += np.asarray([vectorX, vectorY])
+        distance += 1
     itemsInDirection[2] = 1 / distance
     return itemsInDirection
     
 
 def updateInputLayer():
-    global input_snake_direction_vector_x
-    global input_snake_direction_vector_y
-    global input_food_from_snake_vector_x
-    global input_food_from_snake_vector_y
-    global input_snake_left_blocked
-    global input_snake_right_blocked
-    global input_snake_front_blocked
-
+    global inputLayer
     global snake
-    global food
-    global canvas
+    inputLayer = np.zeros(24)
+    itemsInDirection = lookInDirection(snake, 0, MOVEMENT)
+    inputLayer[0] = itemsInDirection[0]
+    inputLayer[1] = itemsInDirection[1]
+    inputLayer[2] = itemsInDirection[2]
 
-    # Normalize value to be either -1 or 1
-    snake_direction_vector_norm = np.linalg.norm(
-        [snake.speedX, snake.speedY])
-    snake_direction_vector_norm = 1 if snake_direction_vector_norm == 0 else snake_direction_vector_norm
-    input_snake_direction_vector_x = snake.speedX / snake_direction_vector_norm
-    input_snake_direction_vector_y = snake.speedY / snake_direction_vector_norm
+    itemsInDirection = lookInDirection(snake, 0, -MOVEMENT)
+    inputLayer[3] = itemsInDirection[0]
+    inputLayer[4] = itemsInDirection[1]
+    inputLayer[5] = itemsInDirection[2]
 
-    food_from_snake_vector_norm = np.linalg.norm(
-        np.asarray(food.position) - np.asarray(snake.position))
-    food_from_snake_vector_norm = 1 if food_from_snake_vector_norm == 0 else food_from_snake_vector_norm
-    input_food_from_snake_vector_x = (
-        food.position[0] - snake.position[0]) / food_from_snake_vector_norm
-    input_food_from_snake_vector_y = (
-        food.position[1] - snake.position[1]) / food_from_snake_vector_norm
-    input_snake_left_blocked = False
-    input_snake_right_blocked = False
-    input_snake_front_blocked = False
+    itemsInDirection = lookInDirection(snake, MOVEMENT, 0)
+    inputLayer[6] = itemsInDirection[0]
+    inputLayer[7] = itemsInDirection[1]
+    inputLayer[8] = itemsInDirection[2]
 
-    # check if left blocked
-    snakeMoveLeft()
-    input_snake_left_blocked = isNextDirectionBlocked(snake)
-    snakeMoveRight()
+    itemsInDirection = lookInDirection(snake, -MOVEMENT, 0)
+    inputLayer[9] = itemsInDirection[0]
+    inputLayer[10] = itemsInDirection[1]
+    inputLayer[11] = itemsInDirection[2]
 
-    # check if front blocked
-    input_snake_front_blocked = isNextDirectionBlocked(snake)
+    itemsInDirection = lookInDirection(snake, MOVEMENT, -MOVEMENT)
+    inputLayer[12] = itemsInDirection[0]
+    inputLayer[13] = itemsInDirection[1]
+    inputLayer[14] = itemsInDirection[2]
 
-    # check if right blocked
-    snakeMoveRight()
-    input_snake_right_blocked = isNextDirectionBlocked(snake)
-    snakeMoveLeft()
+    itemsInDirection = lookInDirection(snake, MOVEMENT, MOVEMENT)
+    inputLayer[15] = itemsInDirection[0]
+    inputLayer[16] = itemsInDirection[1]
+    inputLayer[17] = itemsInDirection[2]
+
+    itemsInDirection = lookInDirection(snake, -MOVEMENT, MOVEMENT)
+    inputLayer[18] = itemsInDirection[0]
+    inputLayer[19] = itemsInDirection[1]
+    inputLayer[20] = itemsInDirection[2]
+
+    itemsInDirection = lookInDirection(snake, -MOVEMENT, -MOVEMENT)
+    inputLayer[21] = itemsInDirection[0]
+    inputLayer[22] = itemsInDirection[1]
+    inputLayer[23] = itemsInDirection[2]
+
 
 
 def getInputLayer():
-    global input_snake_direction_vector_x
-    global input_snake_direction_vector_y
-    global input_food_from_snake_vector_x
-    global input_food_from_snake_vector_y
-    global input_snake_left_blocked
-    global input_snake_right_blocked
-    global input_snake_front_blocked
-    return np.array([input_snake_direction_vector_x, input_snake_direction_vector_y, input_food_from_snake_vector_x, input_food_from_snake_vector_y, input_snake_left_blocked, input_snake_front_blocked, input_snake_right_blocked])
+    global inputLayer
+    return inputLayer
 
 
 def isNextDirectionBlocked(snake):
@@ -382,7 +393,6 @@ def newGameML():
     global score
 
     score = 0
-    actions = [snakeMoveLeft, snakeMoveFront, snakeMoveRight]
     gameEnded = False
     master = tkinter.Tk()
     canvas = tkinter.Canvas(
@@ -391,7 +401,5 @@ def newGameML():
     food = Food(canvas)
     snake.render()
     food.render()
-    master.bind('<Left>', snake.moveLeft)
-    master.bind('<Right>', snake.moveRight)
-    master.bind('<Up>', snake.moveUp)
-    master.bind('<Down>', snake.moveDown)
+    actions = [snake.moveLeft, snake.moveUp, snake.moveRight, snake.moveDown]
+    
