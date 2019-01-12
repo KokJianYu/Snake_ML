@@ -45,10 +45,6 @@ class GeneticAlgo:
 
         return self.mutation(child_population)
 
-        # mating_pool = self.getMatingPool(
-        #     current_population, population_fitness)
-        # return self.crossBreedMatingPopulation(mating_pool, n_population)
-
     def selectParent(self, current_population, population_fitness):
         total_fitness = math.floor(np.sum(population_fitness))
         chosen_fitness = np.random.choice(np.arange(0, total_fitness, total_fitness // np.asarray(current_population).shape[0]), size=1)
