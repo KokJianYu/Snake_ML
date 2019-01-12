@@ -47,6 +47,16 @@ def showSnake(modelName):
         num_steps += 1
     snakeML.exit()
 
+
+def calcFitness(len, num_steps):
+    if len < 10:
+        return math.floor(num_steps * num_steps * math.pow(2, math.floor(len)))
+    else:
+        fitness = num_steps * num_steps
+        fitness *= math.pow(2, 10)
+        fitness *= (len-9)
+        return fitness
+
 #Uncomment following line to see the best performance of a particular generation
 #showSnake("model/model_generation_6_best_fitness.h5")
 scoreScreenMaster = tkinter.Tk()
@@ -96,13 +106,7 @@ for i in range(1, num_of_gens):
             output = np.argmax(output)
             len[j], game_ended = snakeML.nextStep(output)
             num_steps += 1
-        if len[j] < 10:
-            fitness[j] = math.floor(
-                num_steps * num_steps * math.pow(2, math.floor(len[j])))
-        else:
-            fitness[j] = num_steps * num_steps
-            fitness[j] *= math.pow(2, 10)
-            fitness[j] *= (len[j]-9)
+        fitness = calcFitness(len, num_steps)
         snakeML.exit()
         updateCanvas(txtbox_training_id, i, j, fitness[j], len[j])
     best_person = np.argmax(fitness)
