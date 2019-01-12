@@ -1,75 +1,99 @@
 import numpy as np
-
-
+import pandas as pd
+import math
 class GeneticAlgo:
     mutation_chance = 0.1
-
+    global best_fitness
+    best_fitness = 0
+    global best_snake_model
+    global weight_file
+    weight_file = open("model/weights.csv", "a")
     def generatePopulation(self, n_population, n_weights):
         population_flatten = np.random.choice(
             np.arange(-1, 1, 0.1), size=n_population * n_weights)
         return np.reshape(population_flatten, (n_population, n_weights))
 
+    def updateBestSnake(self, current_population, population_fitness):
+        global best_fitness
+        global best_snake_model
+        global weight_file
+        n_weights = np.asarray(current_population).shape[1]
+        population_best_fitness_idx = np.argmax(population_fitness)
+        if best_fitness < population_fitness[population_best_fitness_idx]:
+            best_fitness = population_fitness[population_best_fitness_idx]
+            best_snake_model = np.reshape(current_population[population_best_fitness_idx],(1, n_weights))
+        df = pd.DataFrame(best_snake_model)
+        df.to_csv(weight_file, header=None, index=None)
+
     def getNextGeneration(self, current_population, population_fitness, n_population=-1):
+        n_weights = np.asarray(current_population).shape[1]
         if np.asarray(current_population).ndim == 1:
             print("Not enough parents to crossbreed")
 
         if n_population == -1:
             n_population = np.asarray(current_population).shape[0]
 
-        mating_pool = self.getMatingPool(
-            current_population, population_fitness)
-        return self.crossBreedMatingPopulation(mating_pool, n_population)
+        global best_snake_model
+        self.updateBestSnake(current_population, population_fitness)
+        child_population = np.zeros((n_population, n_weights))
+        child_population[0, :] = best_snake_model
 
-    def getMatingPool(self, current_population, population_fitness, num_parents=-1):
-        n_population = np.asarray(current_population).shape[0]
-        if num_parents == -1:
-            num_parents = n_population // 10
-            num_parents = num_parents if num_parents > 1 else 2
+        for i in range(1, n_population):
+            parent1 = self.selectParent(current_population, population_fitness)
+            parent2 = self.selectParent(current_population, population_fitness)
+            child_population[i, :] = self.crossBreed(parent1, parent2)
 
-        mating_pool_idxs = np.argpartition(population_fitness, -num_parents)[-num_parents:]
-        return current_population[mating_pool_idxs]
+        return self.mutation(child_population)
 
-    def crossBreedMatingPopulation(self, mating_population, n_population):
-        if np.asarray(mating_population).ndim == 1:
-            print("Not enough parents to crossbreed")
-        
-        n_mating_population = mating_population.shape[0]
-        n_weights = np.asarray(mating_population).shape[1]
+        # mating_pool = self.getMatingPool(
+        #     current_population, population_fitness)
+        # return self.crossBreedMatingPopulation(mating_pool, n_population)
 
-        child_population = np.empty((n_population, n_weights))
-        for i in range(0, n_population):
-            crossbreeding_parents_id = np.random.choice(
-                range(0, n_mating_population), size=2, replace=False)
-            selected_parents = np.random.choice(
-                crossbreeding_parents_id, size=n_weights, replace=True)
-            child_weights = [mating_population[selected_parents[i], [i]] for i in range(0, n_weights)]
-            child_population[i, :] = child_weights
-        child_population = self.mutation(child_population)
-        return child_population
+    def selectParent(self, current_population, population_fitness):
+        total_fitness = math.floor(np.sum(population_fitness))
+        chosen_fitness = np.random.choice(np.arange(0, total_fitness, total_fitness // np.asarray(current_population).shape[0]), size=1)
+        sum_fitness = 0
+        for i in range(0, len(population_fitness)):
+            sum_fitness += population_fitness[i]
+            if(sum_fitness > chosen_fitness):
+                return current_population[i]
+
+    def crossBreed(self, parent1, parent2):
+        mating_pair = np.vstack((parent1, parent2))
+        selected_parents = np.random.choice(range(0, 1), size=len(parent1), replace=True)
+        return [mating_pair[selected_parents[i], [i]] for i in range(0, len(parent1))]
 
     def mutation(self, child_population):
         n_child_population = child_population.shape[0]
         n_child_weights = child_population.shape[1]
-        num_of_mutation = int(n_child_population // (self.mutation_chance ** -1))
+        num_of_mutation = int((n_child_population * n_child_weights) // (self.mutation_chance ** -1))
 
-        x = np.random.choice(range(0, n_child_population), num_of_mutation, replace=True)
+        #Do not mutate first child!
+        x = np.random.choice(range(1, n_child_population), num_of_mutation, replace=True)
         y = np.random.choice(range(0, n_child_weights), num_of_mutation, replace=True)
         for i in range(0, num_of_mutation):
             mutation = np.random.choice(np.arange(-1, 1, 0.01))
             child_population[x[i], y[i]] += mutation
-            print(f"{x[i]},{y[i]} mutated by {mutation}")
+            #print(f"{x[i]},{y[i]} mutated by {mutation}")
         return child_population
 
 
 class MainStub: 
-    genes = GeneticAlgo()
-    n_pop = 10
-    n_weight = 10
-    init_population = genes.generatePopulation(n_pop, n_weight)
-    fitness = np.random.rand(10)
-    nextGen = genes.getNextGeneration(init_population, fitness)
-    print("Next Gen")
-    print(nextGen)
+
+    def runTest(self):
+        genes = GeneticAlgo()
+        n_pop = 100
+        n_weight = 608
+        init_population = genes.generatePopulation(n_pop, n_weight)
+        fitness = np.random.rand(n_pop)*500000
+        nextGen = genes.getNextGeneration(init_population, fitness)
+        print("Next Gen")
+        print(nextGen)
 
 
-MainStub()
+def main():
+    MainStub().runTest()
+
+
+if __name__ == "__main__":
+    main()
