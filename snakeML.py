@@ -227,9 +227,10 @@ global input_snake_right_blocked
 global input_snake_front_blocked
 
 # These output are not used here, but provided for clarity
-global output_move_left
-global output_move_front
+global output_move_up
+global output_move_down
 global output_move_right
+global output_move_left
 
 
 def snakeMoveLeft():
@@ -298,72 +299,65 @@ def exit():
 def lookInDirection(snake, vectorX, vectorY):
     global canvas
     # 0 -> food 1 -> tail 2 -> wall
-    itemsInDirection = np.zeros(3)
+    itemsInDirection = np.zeros(2)
     currentPosition = snake.position
     distance = 0
     currentPosition += np.asarray([vectorX, vectorY])
     distance += 1
-    foodFound = False
     tailFound = False
     while not(currentPosition[0] >= BOARD_SIZE or currentPosition[0] < 0 or currentPosition[1] >= BOARD_SIZE or currentPosition[1] < 0):
         itemsInCurrentPosition = canvas.find_overlapping(currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE-1, currentPosition[1]+BLOCK_SIZE-1)
         for item in itemsInCurrentPosition:
             tag = canvas.gettags(item)[0]
-            if not foodFound and tag == FOOD_TAG:
-                itemsInDirection[0] = 1
-                foodFound = True
             if not tailFound and tag == SNAKE_BODY_TAG:
-                itemsInDirection[1] = 1 / distance
+                itemsInDirection[0] = 1 / distance
                 tailFound = True
         currentPosition += np.asarray([vectorX, vectorY])
         distance += 1
-    itemsInDirection[2] = 1 / distance
+    itemsInDirection[1] = 1 / distance
     return itemsInDirection
     
 
 def updateInputLayer():
     global inputLayer
     global snake
-    inputLayer = np.zeros(24)
+    inputLayer = np.zeros(20)
     itemsInDirection = lookInDirection(snake, 0, MOVEMENT)
     inputLayer[0] = itemsInDirection[0]
     inputLayer[1] = itemsInDirection[1]
-    inputLayer[2] = itemsInDirection[2]
 
     itemsInDirection = lookInDirection(snake, 0, -MOVEMENT)
-    inputLayer[3] = itemsInDirection[0]
-    inputLayer[4] = itemsInDirection[1]
-    inputLayer[5] = itemsInDirection[2]
+    inputLayer[2] = itemsInDirection[0]
+    inputLayer[3] = itemsInDirection[1]
 
     itemsInDirection = lookInDirection(snake, MOVEMENT, 0)
-    inputLayer[6] = itemsInDirection[0]
-    inputLayer[7] = itemsInDirection[1]
-    inputLayer[8] = itemsInDirection[2]
+    inputLayer[4] = itemsInDirection[0]
+    inputLayer[5] = itemsInDirection[1]
 
     itemsInDirection = lookInDirection(snake, -MOVEMENT, 0)
-    inputLayer[9] = itemsInDirection[0]
-    inputLayer[10] = itemsInDirection[1]
-    inputLayer[11] = itemsInDirection[2]
+    inputLayer[6] = itemsInDirection[0]
+    inputLayer[7] = itemsInDirection[1]
 
     itemsInDirection = lookInDirection(snake, MOVEMENT, -MOVEMENT)
-    inputLayer[12] = itemsInDirection[0]
-    inputLayer[13] = itemsInDirection[1]
-    inputLayer[14] = itemsInDirection[2]
+    inputLayer[8] = itemsInDirection[0]
+    inputLayer[9] = itemsInDirection[1]
 
     itemsInDirection = lookInDirection(snake, MOVEMENT, MOVEMENT)
-    inputLayer[15] = itemsInDirection[0]
-    inputLayer[16] = itemsInDirection[1]
-    inputLayer[17] = itemsInDirection[2]
+    inputLayer[10] = itemsInDirection[0]
+    inputLayer[11] = itemsInDirection[1]
 
     itemsInDirection = lookInDirection(snake, -MOVEMENT, MOVEMENT)
-    inputLayer[18] = itemsInDirection[0]
-    inputLayer[19] = itemsInDirection[1]
-    inputLayer[20] = itemsInDirection[2]
+    inputLayer[12] = itemsInDirection[0]
+    inputLayer[13] = itemsInDirection[1]
 
     itemsInDirection = lookInDirection(snake, -MOVEMENT, -MOVEMENT)
-    inputLayer[21] = itemsInDirection[0]
-    inputLayer[22] = itemsInDirection[1]
-    inputLayer[23] = itemsInDirection[2]
+    inputLayer[14] = itemsInDirection[0]
+    inputLayer[15] = itemsInDirection[1]
+
+    inputLayer[16] = food.position[0] < snake.position[0]
+    inputLayer[17] = food.position[0] > snake.position[0]
+    inputLayer[18] = food.position[1] < snake.position[1]
+    inputLayer[19] = food.position[1] > snake.position[1]
 
 
 

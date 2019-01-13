@@ -8,13 +8,13 @@ import geneticAlgo
 import math
 import tkinter
 
-def updateCanvas(txtbox_id, generation, n_snake, fitness, length):
-    scoreScreenCanvas.itemconfig(txtbox_id, text=f"Generation: {generation}, Snake: {n_snake}, Fitness: {fitness}, Length: {length}")
+def updateCanvas(txtbox_id, generation, n_snake, fitness, length, steps):
+    scoreScreenCanvas.itemconfig(txtbox_id, text=f"Generation: {generation}, Snake: {n_snake}, Fitness: {fitness}, Length: {length}, Steps:{steps}")
     scoreScreenCanvas.update()
 
 
 def getPopulationFromCsv():
-    df = pd.read_csv("model/generation4.csv", sep=',', header=None)
+    df = pd.read_csv("model/generation32.csv", sep=',', header=None)
     return np.asarray(df.values)
 
 #Manually coded. Change it when have time
@@ -24,13 +24,18 @@ def reshapeWeights(weights, input_layer_units, hidden_layers_units, output_layer
     lastIndex = (input_layer_units * hidden_layers_units[0])
     weight_1 = np.reshape(
         weights[firstIndex:lastIndex], (input_layer_units, hidden_layers_units[0]))
-    activation_1 = np.zeros(16)  # np.asarray([stackedWeights, np.zeros(9)])
+    activation_1 = np.ones(hidden_layers_units[0])  # np.asarray([stackedWeights, np.zeros(9)])
     firstIndex = lastIndex
-    lastIndex = firstIndex + (hidden_layers_units[0] * output_layer_units)
+    lastIndex = firstIndex + (hidden_layers_units[0] * hidden_layers_units[1])
+    weight_2 = np.reshape(
+        weights[firstIndex:lastIndex], (hidden_layers_units[0], hidden_layers_units[1]))
+    activation_2 = np.ones(hidden_layers_units[1])  # np.asarray([stackedWeights, np.zeros(3)])
+    firstIndex = lastIndex
+    lastIndex = firstIndex + (hidden_layers_units[1] * output_layer_units)
     weight_3 = np.reshape(
-        weights[firstIndex:lastIndex], (hidden_layers_units[0], output_layer_units))
-    activation_3 = np.zeros(4)  # np.asarray([stackedWeights, np.zeros(3)])
-    return np.array([weight_1, activation_1, weight_3, activation_3])
+        weights[firstIndex:lastIndex], (hidden_layers_units[1], output_layer_units))
+    activation_3 = np.ones(output_layer_units)  # np.asarray([stackedWeights, np.zeros(3)])
+    return np.array([weight_1, activation_1, weight_2, activation_2, weight_3, activation_3])
 
 def showSnake(modelName):
     model = tf.keras.models.load_model(modelName)
@@ -49,16 +54,18 @@ def showSnake(modelName):
 
 
 def calcFitness(len, num_steps):
+    fitness = 0
     if len < 10:
-        return math.floor(num_steps * num_steps * math.pow(2, math.floor(len)))
+        fitness = num_steps * math.pow(2, len)
     else:
-        fitness = num_steps * num_steps
+        fitness = num_steps
         fitness *= math.pow(2, 10)
         fitness *= (len-9)
-        return fitness
+
+    return fitness
 
 #Uncomment following line to see the best performance of a particular generation
-#showSnake("model/model_generation_6_best_fitness.h5")
+#showSnake("model/model_generation_20_best_fitness.h5")
 scoreScreenMaster = tkinter.Tk()
 scoreScreenCanvas = tkinter.Canvas(
     scoreScreenMaster, bg="white", height=200, width=500)
@@ -67,29 +74,33 @@ txtbox_trained_id = scoreScreenCanvas.create_text(250, 20, text=f"Generation: 0,
 txtbox_training_id = scoreScreenCanvas.create_text(250, 120, text=f"Generation: 0, Snake: 0, Fitness: training")
 
 GeneticAlgo = geneticAlgo.GeneticAlgo()
-num_of_gens = 20
+num_of_gens = 100
 n_population = 2000
-max_steps = 2500
+max_steps = 200
 
 # Build model (Building fixed NN first)
-input_layer_units = 24
-hidden_layers_units = [16]
+input_layer_units = 20
+hidden_layers_units = [16, 16]
 output_layer_units = 4
 model = tf.keras.models.Sequential()
 model.add(tf.keras.layers.Dense(
-    hidden_layers_units[0], input_dim=input_layer_units, activation=tf.nn.sigmoid))
-model.add(tf.keras.layers.Dense(output_layer_units, activation=tf.nn.softmax))
+    hidden_layers_units[0], input_dim=input_layer_units, activation=tf.nn.relu, bias_initializer='ones'))
+model.add(tf.keras.layers.Dense(
+    hidden_layers_units[1], input_dim=input_layer_units, activation=tf.nn.relu, bias_initializer='ones'))
+model.add(tf.keras.layers.Dense(output_layer_units, activation=tf.nn.softmax, bias_initializer='ones'))
 total_weights = input_layer_units * hidden_layers_units[0]
+total_weights += input_layer_units * hidden_layers_units[1]
 total_weights += hidden_layers_units[0] * output_layer_units
 
 # Genetic loop
 population = GeneticAlgo.generatePopulation(
    n_population, total_weights)  # Change to total number of weights
 #population = getPopulationFromCsv()
-for i in range(1, num_of_gens):
+for i in range(0, num_of_gens):
     print(f"Generation {i}:")
     fitness = np.empty(n_population)
     len = np.empty(n_population)
+    steps = np.empty(n_population)
     for j in range(0, n_population):
         weights = reshapeWeights(
             population[j], input_layer_units, hidden_layers_units, output_layer_units)
@@ -105,12 +116,13 @@ for i in range(1, num_of_gens):
             output = np.argmax(output)
             len[j], game_ended = snakeML.nextStep(output)
             num_steps += 1
-        fitness[j] = calcFitness(len[j], num_steps)
+        steps[j] = num_steps
+        fitness[j] = calcFitness(len[j], steps[j])
         snakeML.exit()
-        updateCanvas(txtbox_training_id, i, j, fitness[j], len[j])
+        updateCanvas(txtbox_training_id, i, j, fitness[j], len[j], steps[j])
     best_person = np.argmax(fitness)
-    print(f"Generation {i}, Top fitness = {fitness[best_person]}, Length = {len[j]}")
-    updateCanvas(txtbox_trained_id, i, "Null", fitness[best_person], len[j])
+    print(f"Generation {i}, Top fitness = {fitness[best_person]}, Length = {len[best_person]}, Steps = {steps[best_person]}")
+    updateCanvas(txtbox_trained_id, i, "Null", fitness[best_person], len[best_person], steps[best_person])
 
     weights = reshapeWeights(
         population[best_person], input_layer_units, hidden_layers_units, output_layer_units)
