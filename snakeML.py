@@ -21,7 +21,7 @@ class Snake:
         self.position = [200, 200]  # x,y coor
         self.speedX = MOVEMENT
         self.speedY = 0
-        self.length = 5
+        self.length = 1
         self.blocksInCanvas = []
         self.canvas = None
         self.currentDirection = self.RIGHT
@@ -233,26 +233,28 @@ global output_move_right
 global output_move_left
 
 
-def snakeMoveLeft():
+def snakeMoveLeft(object):
     direction = (snake.currentDirection + 1) % 4
     snake.move(direction)
 
 
-def snakeMoveFront():
+def snakeMoveFront(object):
     direction = (snake.currentDirection)
     snake.move(direction)
 
 
-def snakeMoveRight():
+def snakeMoveRight(object):
     direction = (snake.currentDirection - 1) % 4
     snake.move(direction)
 
 
 def nextStep(actionToDo):
     global snake
+    global foodAte
+    foodAte = False
     actions[actionToDo](snake)
     gameLoopML()
-    return snake.length, gameEnded
+    return foodAte, gameEnded
 
 
 def startGameML(showGui=True):
@@ -272,7 +274,9 @@ def gameLoopML():
     global canvas
     global score
     global gameEnded
+    global ateFood
     if snakeCollidedOnFood(snake, food):
+        ateFood = True
         score += 1
         snake.eat(food)
         food = Food(canvas)
@@ -288,8 +292,8 @@ def gameLoopML():
     updateInputLayer()
     master.update()
     global displaySnakeCanvas
-    if displaySnakeCanvas:
-        time.sleep(0.1)
+    #if displaySnakeCanvas:
+        #time.sleep(0.1)
 
 def exit():
     master.destroy()
@@ -321,7 +325,7 @@ def lookInDirection(snake, vectorX, vectorY):
 def updateInputLayer():
     global inputLayer
     global snake
-    inputLayer = np.zeros(20)
+    inputLayer = np.zeros(16)
     itemsInDirection = lookInDirection(snake, 0, MOVEMENT)
     inputLayer[0] = itemsInDirection[0]
     inputLayer[1] = itemsInDirection[1]
@@ -338,26 +342,27 @@ def updateInputLayer():
     inputLayer[6] = itemsInDirection[0]
     inputLayer[7] = itemsInDirection[1]
 
-    itemsInDirection = lookInDirection(snake, MOVEMENT, -MOVEMENT)
-    inputLayer[8] = itemsInDirection[0]
-    inputLayer[9] = itemsInDirection[1]
+    snakeDirection = [0, 0, 0 ,0]
+    if(snake.currentDirection == snake.LEFT):
+        snakeDirection[0] = 1
+    elif(snake.currentDirection == snake.RIGHT):
+        snakeDirection[1] = 1
+    elif(snake.currentDirection == snake.UP):
+        snakeDirection[2] = 1
+    elif(snake.currentDirection == snake.DOWN):
+        snakeDirection[3] = 1
 
-    itemsInDirection = lookInDirection(snake, MOVEMENT, MOVEMENT)
-    inputLayer[10] = itemsInDirection[0]
-    inputLayer[11] = itemsInDirection[1]
+    inputLayer[8] = snakeDirection[0]
+    inputLayer[9] = snakeDirection[1]
+    inputLayer[10] = snakeDirection[2]
+    inputLayer[11] = snakeDirection[3]
 
-    itemsInDirection = lookInDirection(snake, -MOVEMENT, MOVEMENT)
-    inputLayer[12] = itemsInDirection[0]
-    inputLayer[13] = itemsInDirection[1]
+    inputLayer[12] = food.position[0] < snake.position[0]
+    inputLayer[13] = food.position[0] > snake.position[0]
+    inputLayer[14] = food.position[1] < snake.position[1]
+    inputLayer[15] = food.position[1] > snake.position[1]
 
-    itemsInDirection = lookInDirection(snake, -MOVEMENT, -MOVEMENT)
-    inputLayer[14] = itemsInDirection[0]
-    inputLayer[15] = itemsInDirection[1]
 
-    inputLayer[16] = food.position[0] < snake.position[0]
-    inputLayer[17] = food.position[0] > snake.position[0]
-    inputLayer[18] = food.position[1] < snake.position[1]
-    inputLayer[19] = food.position[1] > snake.position[1]
 
 
 
@@ -395,5 +400,9 @@ def newGameML():
     food = Food(canvas)
     snake.render()
     food.render()
-    actions = [snake.moveLeft, snake.moveUp, snake.moveRight, snake.moveDown]
-    
+    actions = [snakeMoveLeft, snakeMoveFront, snakeMoveRight]
+
+
+def getSnakeLength():
+    global snake
+    return snake.length
