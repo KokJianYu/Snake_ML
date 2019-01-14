@@ -8,7 +8,7 @@ class DeepQNetworkAgent(object):
     def __init__(self):
         self.learningRate = 0.0005
         self.model = self.createModel()
-        self.explorationEpsilon = 0.96
+        self.explorationEpsilon = 1
         self.epsilonDecay = 0.01
         self.memory = [] #Used to store [oldState, action, reward, newState, gameEnded]
         self.reward = 0
@@ -17,14 +17,18 @@ class DeepQNetworkAgent(object):
 
     def createModel(self, weights=None):
         model = keras.Sequential()
-        model.add(keras.layers.Dense(120, activation="relu", input_dim=16))
+        model.add(keras.layers.Dense(120, activation="relu", input_dim=11))
+        model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(120, activation="relu"))
+        model.add(keras.layers.Dropout(0.15))
+        model.add(keras.layers.Dense(120, activation="relu"))
+        model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(3, activation="softmax"))
         opt = keras.optimizers.Adam(self.learningRate)
         model.compile(loss="mse", optimizer=opt)
 
         if weights:
-            model.set_weights(weights)
+            model.load_weights(weights)
 
         return model
 
@@ -44,7 +48,7 @@ class DeepQNetworkAgent(object):
         if not gameEnded:
             targetQ = reward + self.discount * (np.max(self.model.predict(newState)))
         qValue = self.model.predict(oldState)
-        qValue[np.argmax(action)] = targetQ #Might need to change np.argmax(action) to action
+        qValue[0][action] = targetQ #Might need to change np.argmax(action) to action
         self.model.fit(oldState, qValue, epochs=1 , verbose=0)
 
     def replay_memory(self):
