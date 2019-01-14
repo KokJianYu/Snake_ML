@@ -1,7 +1,6 @@
 import snakeML
 from DeepQNetwork import DeepQNetworkAgent
 import numpy as np
-from DQN import DQNAgent
 
 score_plot = []
 counter_plot = []
