@@ -303,21 +303,23 @@ def exit():
 def lookInDirection(snake, vectorX, vectorY):
     global canvas
     # 0 -> tail 1 -> wall
-    itemInDirection = 0
+    #itemInDirection = 0
+    distance = 0
     currentPosition = snake.position
     currentPosition += np.asarray([vectorX, vectorY])
+    distance += 1
     tailFound = False
-    if not(currentPosition[0] >= BOARD_SIZE or currentPosition[0] < 0 or currentPosition[1] >= BOARD_SIZE or currentPosition[1] < 0):
+    while not(currentPosition[0] >= BOARD_SIZE or currentPosition[0] < 0 or currentPosition[1] >= BOARD_SIZE or currentPosition[1] < 0):
         itemsInCurrentPosition = canvas.find_overlapping(currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE-1, currentPosition[1]+BLOCK_SIZE-1)
         for item in itemsInCurrentPosition:
             tag = canvas.gettags(item)[0]
             if not tailFound and tag == SNAKE_BODY_TAG:
-                itemInDirection = 1
+                return 1 / distance
                 tailFound = True
         currentPosition += np.asarray([vectorX, vectorY])
-    else:
-        itemInDirection = 1
-    return itemInDirection
+        distance += 1
+
+    return 1 / distance
     
 
 def updateInputLayer():
