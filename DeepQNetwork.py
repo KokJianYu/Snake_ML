@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import random
 
+SIZE_INPUT_LAYER = 14
+
 class DeepQNetworkAgent(object):
 
     def __init__(self):
@@ -17,18 +19,15 @@ class DeepQNetworkAgent(object):
 
     def createModel(self, weights=None):
         model = keras.Sequential()
-        model.add(keras.layers.Dense(120, activation="relu", input_dim=11))
+        model.add(keras.layers.Dense(30, activation="relu", input_dim=SIZE_INPUT_LAYER))
         model.add(keras.layers.Dropout(0.15))
-        model.add(keras.layers.Dense(120, activation="relu"))
+        model.add(keras.layers.Dense(30, activation="relu"))
         model.add(keras.layers.Dropout(0.15))
-        model.add(keras.layers.Dense(120, activation="relu"))
+        model.add(keras.layers.Dense(30, activation="relu"))
         model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(3, activation="softmax"))
         opt = keras.optimizers.Adam(self.learningRate)
         model.compile(loss="mse", optimizer=opt)
-
-        if weights:
-            model.load_weights(weights)
 
         return model
 
@@ -53,7 +52,10 @@ class DeepQNetworkAgent(object):
 
     def replay_memory(self):
         if len(self.memory) > 1000:
-            minibatch = random.sample(self.memory, 1000)
+            #Select the latest 100 entry in memory, then select rest in random
+            firsthalfminibatch = np.flip(self.memory[-100:], 0)
+            secondhalfminibatch = random.sample(self.memory[:-100], 900)
+            minibatch = np.vstack((firsthalfminibatch, secondhalfminibatch))
         else:
             minibatch = self.memory
         
