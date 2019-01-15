@@ -1,3 +1,4 @@
+import time
 import tkinter
 import random
 import functools
@@ -8,6 +9,7 @@ MOVEMENT = 20
 BOARD_SIZE = 400
 SNAKE_BODY_TAG = "0"
 FOOD_TAG = "1"
+
 
 class Snake:
     UP = 0
@@ -23,9 +25,10 @@ class Snake:
         self.speedY = 0
         self.length = 1
         self.blocksInCanvas = []
-        self.canvas = None
         self.currentDirection = self.RIGHT
         self.directionInput = self.NO_DIRECTION
+        self.headBlockCanvasID = canvas.create_rectangle(
+            self.position[0], self.position[1], self.position[0] + BLOCK_SIZE-1, self.position[1] + BLOCK_SIZE-1, fill="green")
 
     def move(self, direction):
         if direction == self.LEFT:
@@ -70,10 +73,10 @@ class Snake:
         self.position[1] += snake.speedY
 
     def isMovingInOppositeDirection(self, newDirection):
-        #Commented to teach snakes.
-        #if((newDirection + 2) % 4 == self.currentDirection):
+        # Commented to teach snakes.
+        # if((newDirection + 2) % 4 == self.currentDirection):
         #    return True
-        #return False
+        # return False
         return False
 
     def render(self):
@@ -82,8 +85,14 @@ class Snake:
                                                            BLOCK_SIZE-1,
                                                            self.position[1] +
                                                            BLOCK_SIZE-1,
-                                                           fill="white", 
+                                                           fill="white",
                                                            tags=SNAKE_BODY_TAG))
+        canvas.coords(self.headBlockCanvasID, self.position[0], self.position[1],
+                      self.position[0] +
+                      BLOCK_SIZE-1,
+                      self.position[1] +
+                      BLOCK_SIZE-1)
+        canvas.tag_raise(self.headBlockCanvasID)
         if self.length < len(self.blocksInCanvas):
             toDelete = self.blocksInCanvas.pop(0)
             canvas.delete(toDelete)
@@ -100,7 +109,7 @@ class Food:
         self.position = [140, 140]
         self.canvas = canvas
         #first_pass = True
-        while snakeCollidedOnFood(snake, self):# | first_pass:
+        while snakeCollidedOnFood(snake, self):  # | first_pass:
             first_pass = False
             self.position[0] = random.randint(
                 0, (BOARD_SIZE/BLOCK_SIZE) - 1) * BLOCK_SIZE
@@ -113,7 +122,7 @@ class Food:
                                                 BLOCK_SIZE-1,
                                                 self.position[1] +
                                                 BLOCK_SIZE-1,
-                                                fill="red", 
+                                                fill="red",
                                                 tags=FOOD_TAG)
 
     def eaten(self):
@@ -265,8 +274,6 @@ def startGameML(showGui=True):
     canvas.grid()
     gameLoopML()
 
-import time
-
 
 def gameLoopML():
     global snake
@@ -295,53 +302,57 @@ def gameLoopML():
     if displaySnakeCanvas:
         time.sleep(0.05)
 
+
 def exit():
     master.destroy()
-
 
 
 def lookInDirection(snake, vectorX, vectorY):
     global canvas
     # 0 -> tail 1 -> wall
-    #itemInDirection = 0
+    itemsInDirection = np.zeros(2)
     distance = 0
     currentPosition = snake.position
     currentPosition += np.asarray([vectorX, vectorY])
     distance += 1
     tailFound = False
     while not(currentPosition[0] >= BOARD_SIZE or currentPosition[0] < 0 or currentPosition[1] >= BOARD_SIZE or currentPosition[1] < 0):
-        itemsInCurrentPosition = canvas.find_overlapping(currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE-1, currentPosition[1]+BLOCK_SIZE-1)
+        itemsInCurrentPosition = canvas.find_overlapping(
+            currentPosition[0], currentPosition[1], currentPosition[0]+BLOCK_SIZE-1, currentPosition[1]+BLOCK_SIZE-1)
         for item in itemsInCurrentPosition:
             tag = canvas.gettags(item)[0]
             if not tailFound and tag == SNAKE_BODY_TAG:
-                return 1 / distance
+                itemsInDirection[0] = 1 / distance
                 tailFound = True
         currentPosition += np.asarray([vectorX, vectorY])
         distance += 1
+    itemsInDirection[1] = 1 / distance
+    return itemsInDirection
 
-    return 1 / distance
-    
 
 def updateInputLayer():
     global inputLayer
     global snake
-    inputLayer = np.zeros(11)
+    inputLayer = np.zeros(14)
 
     snakeMoveLeft(None)
     itemInDirection = lookInDirection(snake, snake.speedX, snake.speedY)
-    inputLayer[0] = itemInDirection
-    
+    inputLayer[0] = itemInDirection[0]
+    inputLayer[1] = itemInDirection[1]
+
     snakeMoveFront(None)
     itemInDirection = lookInDirection(snake, snake.speedX, snake.speedY)
-    inputLayer[1] = itemInDirection
+    inputLayer[2] = itemInDirection[0]
+    inputLayer[3] = itemInDirection[1]
 
     snakeMoveRight(None)
     itemInDirection = lookInDirection(snake, snake.speedX, snake.speedY)
-    inputLayer[2] = itemInDirection
-    #Reset back direction of snake
+    inputLayer[4] = itemInDirection[0]
+    inputLayer[5] = itemInDirection[1]
+    # Reset back direction of snake
     snakeMoveFront(None)
 
-    snakeDirection = [0, 0, 0 ,0]
+    snakeDirection = [0, 0, 0, 0]
     if(snake.currentDirection == snake.LEFT):
         snakeDirection[0] = 1
     elif(snake.currentDirection == snake.RIGHT):
@@ -351,18 +362,25 @@ def updateInputLayer():
     elif(snake.currentDirection == snake.DOWN):
         snakeDirection[3] = 1
 
-    inputLayer[3] = snakeDirection[0]
-    inputLayer[4] = snakeDirection[1]
-    inputLayer[5] = snakeDirection[2]
-    inputLayer[6] = snakeDirection[3]
+    inputLayer[6] = snakeDirection[0]
+    inputLayer[7] = snakeDirection[1]
+    inputLayer[8] = snakeDirection[2]
+    inputLayer[9] = snakeDirection[3]
 
-    inputLayer[7] = food.position[0] < snake.position[0]
-    inputLayer[8] = food.position[0] > snake.position[0]
-    inputLayer[9] = food.position[1] < snake.position[1]
-    inputLayer[10] = food.position[1] > snake.position[1]
+    # if food.position[0] < snake.position[0]:
+    #     inputLayer[10] = 1 / ((snake.position[0] - food.position[0]) / BLOCK_SIZE)
+    # if food.position[0] > snake.position[0]:
+    #     inputLayer[11] = 1 / ((food.position[0] - snake.position[0]) / BLOCK_SIZE)
+    # if food.position[1] < snake.position[1]:
+    #     inputLayer[12] = 1 / ((snake.position[1] - food.position[1]) / BLOCK_SIZE)
+    # if food.position[1] > snake.position[1]:
+    #     inputLayer[13] = 1 / ((food.position[1] - snake.position[1]) / BLOCK_SIZE)
 
-
-
+    inputLayer[10] = food.position[0] < snake.position[0]
+    inputLayer[11] = food.position[0] > snake.position[0]
+    inputLayer[12] = food.position[1] < snake.position[1]
+    inputLayer[13] = food.position[1] > snake.position[1]
+        
 
 
 def getInputLayer():
