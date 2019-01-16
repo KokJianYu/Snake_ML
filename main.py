@@ -13,29 +13,32 @@ def updateCanvas(txtbox_id, generation, n_snake, fitness, length, steps):
     scoreScreenCanvas.update()
 
 
-def getPopulationFromCsv():
-    df = pd.read_csv("model/generation32.csv", sep=',', header=None)
+def getPopulationFromCsv(generation):
+    df = pd.read_csv(f"generationInfo/generation{generation}.csv", sep=',', header=None)
     return np.asarray(df.values)
 
 #Manually coded. Change it when have time
-def reshapeWeights(weights, input_layer_units, hidden_layers_units, output_layer_units):
-
+def reshapeWeights(population, input_layer_units, hidden_layers_units, output_layer_units):
+    weights = []
     firstIndex = 0
     lastIndex = (input_layer_units * hidden_layers_units[0])
-    weight_1 = np.reshape(
-        weights[firstIndex:lastIndex], (input_layer_units, hidden_layers_units[0]))
-    activation_1 = np.ones(hidden_layers_units[0])  # np.asarray([stackedWeights, np.zeros(9)])
+    weights.append(np.reshape(
+        population[firstIndex:lastIndex], (input_layer_units, hidden_layers_units[0])))
+    weights.append(np.zeros(hidden_layers_units[0]))  # np.asarray([stackedWeights, np.zeros(9)])
+
+    for i in range(0, hidden_layers_units.__len__()-1):
+        firstIndex = lastIndex
+        lastIndex = firstIndex + (hidden_layers_units[i] * hidden_layers_units[i+1])
+        weights.append(np.reshape(
+            population[firstIndex:lastIndex], (hidden_layers_units[i], hidden_layers_units[i+1])))
+        weights.append(np.zeros(hidden_layers_units[1]))  # np.asarray([stackedWeights, np.zeros(3)])
+
     firstIndex = lastIndex
-    lastIndex = firstIndex + (hidden_layers_units[0] * hidden_layers_units[1])
-    weight_2 = np.reshape(
-        weights[firstIndex:lastIndex], (hidden_layers_units[0], hidden_layers_units[1]))
-    activation_2 = np.ones(hidden_layers_units[1])  # np.asarray([stackedWeights, np.zeros(3)])
-    firstIndex = lastIndex
-    lastIndex = firstIndex + (hidden_layers_units[1] * output_layer_units)
-    weight_3 = np.reshape(
-        weights[firstIndex:lastIndex], (hidden_layers_units[1], output_layer_units))
-    activation_3 = np.ones(output_layer_units)  # np.asarray([stackedWeights, np.zeros(3)])
-    return np.array([weight_1, activation_1, weight_2, activation_2, weight_3, activation_3])
+    lastIndex = firstIndex + (hidden_layers_units[-1] * output_layer_units)
+    weights.append(np.reshape(
+        population[firstIndex:lastIndex], (hidden_layers_units[-1], output_layer_units)))
+    weights.append(np.zeros(output_layer_units))  # np.asarray([stackedWeights, np.zeros(3)])
+    return np.array(weights)
 
 def showSnake(modelName):
     model = tf.keras.models.load_model(modelName)
@@ -56,16 +59,14 @@ def showSnake(modelName):
 def calcFitness(len, num_steps):
     fitness = 0
     if len < 10:
-        fitness = num_steps * math.pow(2, len)
+        fitness = num_steps * num_steps * math.pow(2, len)
     else:
-        fitness = num_steps
+        fitness = num_steps * num_steps
         fitness *= math.pow(2, 10)
         fitness *= (len-9)
 
     return fitness
 
-#Uncomment following line to see the best performance of a particular generation
-#showSnake("model/model_generation_20_best_fitness.h5")
 scoreScreenMaster = tkinter.Tk()
 scoreScreenCanvas = tkinter.Canvas(
     scoreScreenMaster, bg="white", height=200, width=500)
@@ -79,23 +80,23 @@ n_population = 2000
 max_steps = 200
 
 # Build model (Building fixed NN first)
-input_layer_units = 20
-hidden_layers_units = [16, 16]
-output_layer_units = 4
+input_layer_units = 14
+hidden_layers_units = [30, 30, 30]
+output_layer_units = 3
 model = tf.keras.models.Sequential()
-model.add(tf.keras.layers.Dense(
-    hidden_layers_units[0], input_dim=input_layer_units, activation=tf.nn.relu, bias_initializer='ones'))
-model.add(tf.keras.layers.Dense(
-    hidden_layers_units[1], input_dim=input_layer_units, activation=tf.nn.relu, bias_initializer='ones'))
-model.add(tf.keras.layers.Dense(output_layer_units, activation=tf.nn.softmax, bias_initializer='ones'))
+model.add(tf.keras.layers.Dense(hidden_layers_units[0], activation="relu", input_dim=input_layer_units))
+for i in range(1, len(hidden_layers_units)):
+    model.add(tf.keras.layers.Dense(hidden_layers_units[i], activation="relu"))
+model.add(tf.keras.layers.Dense(output_layer_units, activation=tf.nn.softmax))
 total_weights = input_layer_units * hidden_layers_units[0]
-total_weights += input_layer_units * hidden_layers_units[1]
-total_weights += hidden_layers_units[0] * output_layer_units
+for i in range(0, len(hidden_layers_units) - 1):
+    total_weights += hidden_layers_units[i] * hidden_layers_units[i+1]
+total_weights += hidden_layers_units[-1] * output_layer_units
 
 # Genetic loop
 population = GeneticAlgo.generatePopulation(
    n_population, total_weights)  # Change to total number of weights
-#population = getPopulationFromCsv()
+#population = getPopulationFromCsv(6)
 for i in range(0, num_of_gens):
     print(f"Generation {i}:")
     fitness = np.empty(n_population)
@@ -114,7 +115,8 @@ for i in range(0, num_of_gens):
             output = model.predict(np.matrix(input_layer))
             # predict output
             output = np.argmax(output)
-            len[j], game_ended = snakeML.nextStep(output)
+            foodEaten, game_ended = snakeML.nextStep(output)
+            len[j] = snakeML.getSnakeLength()
             num_steps += 1
         steps[j] = num_steps
         fitness[j] = calcFitness(len[j], steps[j])
@@ -127,9 +129,10 @@ for i in range(0, num_of_gens):
     weights = reshapeWeights(
         population[best_person], input_layer_units, hidden_layers_units, output_layer_units)
     model.set_weights(weights)
-    model.save(f"model/model_generation_{i}_best_fitness.h5")
+    model.save(f"model/model_generation_{i:02d}_best_fitness.hdf5")
     print(f"Generation {i} best model saved.")
     print("Creating next generation. This might take a while.")
     population = GeneticAlgo.getNextGeneration(population, fitness)
     df = pd.DataFrame(population)
-    df.to_csv(f'model/generation{i+1}.csv', header=None, index=None)
+    df.to_csv(f'generationInfo/generation{i+1:02d}.csv', header=None, index=None)
+    max_steps += 20
