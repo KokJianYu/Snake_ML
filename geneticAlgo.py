@@ -4,13 +4,12 @@ import math
 import random
 
 class GeneticAlgo:
-    mutation_chance = 0.01
+    #Parameters for genetic algo
+    mutation_rate = 0.01
     snake_to_retain = 5
     global best_fitnesses
     best_fitnesses = np.empty(1)
     global best_snake_models
-    global fitness_file
-    fitness_file = open("generationInfo/fitness.csv", "a")
     def generatePopulation(self, n_population, n_weights):
         global best_snake_models
         best_snake_models = np.empty(n_weights)
@@ -21,7 +20,6 @@ class GeneticAlgo:
     def updateBestSnakes(self, current_population, population_fitness):
         global best_fitnesses
         global best_snake_models
-        global fitness_file
         if(len(population_fitness) < self.snake_to_retain):
             self.snake_to_retain = len(population_fitness)
         n_weights = np.asarray(current_population).shape[1]
@@ -46,16 +44,19 @@ class GeneticAlgo:
         global best_snake_models
         self.updateBestSnakes(current_population, population_fitness)
         child_population = np.zeros((n_population, n_weights))
+        # Bring the best few snakes to the next population, without getting mutated
         for i in range(self.snake_to_retain):
             child_population[i, :] = best_snake_models[i]
 
-        for i in range(5, n_population):
+        for i in range(self.snake_to_retain, n_population):
             parent1 = self.selectParent(current_population, population_fitness)
             parent2 = self.selectParent(current_population, population_fitness)
             child_population[i, :] = self.crossBreed(parent1, parent2)
 
         return self.mutation(child_population)
 
+    # Randomly select a parent from current population based on fitness level.
+    # Higher fitness level --> Higher chance of getting selected
     def selectParent(self, current_population, population_fitness):
         total_fitness = math.floor(np.sum(population_fitness))
         chosen_fitness = random.randint(0, total_fitness)
@@ -73,16 +74,16 @@ class GeneticAlgo:
     def mutation(self, child_population):
         n_child_population = child_population.shape[0]
         n_child_weights = child_population.shape[1]
-        num_of_mutation = int((n_child_population * n_child_weights) // (self.mutation_chance ** -1))
         
         for i in range(1, n_child_population):
             for j in range(0, n_child_weights):
-                if np.random.random_sample() < self.mutation_chance:
+                if np.random.random_sample() < self.mutation_rate:
                     mutation = np.random.normal(0, 1, size=1)
                     child_population[i, j] = mutation
         return child_population
 
 
+#This class is used to test the methods in this class
 class MainStub: 
 
     def runTest(self):

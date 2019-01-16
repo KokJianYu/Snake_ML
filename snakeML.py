@@ -227,21 +227,7 @@ if __name__ == '__main__':
 
 #################### The following code are used for machine learning for the snake AI ###############################################
 
-global input_snake_direction_vector_x
-global input_snake_direction_vector_y
-global input_food_from_snake_vector_x
-global input_food_from_snake_vector_y
-global input_snake_left_blocked
-global input_snake_right_blocked
-global input_snake_front_blocked
-
-# These output are not used here, but provided for clarity
-global output_move_up
-global output_move_down
-global output_move_right
-global output_move_left
-
-
+# Turn snake to the left of its current direction
 def snakeMoveLeft(object):
     direction = (snake.currentDirection + 1) % 4
     snake.move(direction)
@@ -250,6 +236,8 @@ def snakeMoveLeft(object):
 def snakeMoveFront(object):
     direction = (snake.currentDirection)
     snake.move(direction)
+
+# Turn snake to the right of its current direction
 
 
 def snakeMoveRight(object):
@@ -265,6 +253,8 @@ def nextStep(actionToDo):
     gameLoopML()
     return foodAte, gameEnded
 
+# Allow an instance of game to be started that is not governed by tkinter mainloop/after methods
+
 
 def startGameML(showGui=True):
     global displaySnakeCanvas
@@ -273,6 +263,29 @@ def startGameML(showGui=True):
         master.withdraw()
     canvas.grid()
     gameLoopML()
+
+
+# Allow an instance of game to be started that is not governed by tkinter mainloop/after methods
+def newGameML():
+    global actions
+    global gameEnded
+    global snake
+    global food
+    global canvas
+    global master
+    global canvas
+    global score
+
+    score = 0
+    gameEnded = False
+    master = tkinter.Tk()
+    canvas = tkinter.Canvas(
+        master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
+    snake = Snake(canvas)
+    food = Food(canvas)
+    snake.render()
+    food.render()
+    actions = [snakeMoveLeft, snakeMoveFront, snakeMoveRight]
 
 
 def gameLoopML():
@@ -380,7 +393,6 @@ def updateInputLayer():
     inputLayer[11] = food.position[0] > snake.position[0]
     inputLayer[12] = food.position[1] < snake.position[1]
     inputLayer[13] = food.position[1] > snake.position[1]
-        
 
 
 def getInputLayer():
@@ -396,28 +408,6 @@ def isNextDirectionBlocked(snake):
         if (isCollided(nextBlockPosition[0], nextBlockPosition[1], blockCoor[0], blockCoor[1])):
             return True
     return False
-
-
-def newGameML():
-    global actions
-    global gameEnded
-    global snake
-    global food
-    global canvas
-    global master
-    global canvas
-    global score
-
-    score = 0
-    gameEnded = False
-    master = tkinter.Tk()
-    canvas = tkinter.Canvas(
-        master, bg="black", height=BOARD_SIZE, width=BOARD_SIZE)
-    snake = Snake(canvas)
-    food = Food(canvas)
-    snake.render()
-    food.render()
-    actions = [snakeMoveLeft, snakeMoveFront, snakeMoveRight]
 
 
 def getSnakeLength():

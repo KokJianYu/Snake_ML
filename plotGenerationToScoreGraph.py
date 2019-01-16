@@ -6,12 +6,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+# This class is used to plot out the performance of each snake generation trained by genetic algorithm
+
 SIZE_INPUT_LAYER = 14
+# Model is hard coded. Change here if you modified it in main.py
 model = keras.Sequential()
 model.add(keras.layers.Dense(30, activation="relu", input_dim=SIZE_INPUT_LAYER))
 model.add(keras.layers.Dense(30, activation="relu"))
 model.add(keras.layers.Dense(30, activation="relu"))
 model.add(keras.layers.Dense(3, activation="softmax"))
+# Don't actually need compile model since we are not training anything
 opt = keras.optimizers.Adam(0.0005)
 model.compile(loss="mse", optimizer=opt)
 
@@ -24,14 +28,13 @@ generation_plot = []
 for i in range(len(files)):
     weightsToUse = f"{PATH}{files[i]}"
     model.load_weights(weightsToUse)
-    #print(f"Current snake is from {files[i]}")
     totalScore = 0
     for j in range(GAMES_PER_GENERATION):
         score = 0
         counter = 0
         snakeML.newGameML()
         snakeML.startGameML(showGui=SHOW_GUI)
-        while not snakeML.gameEnded and counter < 200: 
+        while not snakeML.gameEnded and counter < 200:
             state = np.reshape(snakeML.getInputLayer(), (1, SIZE_INPUT_LAYER))
             output = model.predict(state)
             action = np.argmax(output)
@@ -44,8 +47,9 @@ for i in range(len(files)):
         totalScore += score
         snakeML.exit()
     score_plot.append(totalScore / GAMES_PER_GENERATION)
-    generation_plot.append(i) 
+    generation_plot.append(i)
     print(f"File={files[i]} Score={totalScore / GAMES_PER_GENERATION}")
+
 
 def plot_seaborn(array_counter, array_score):
     generation = np.array(array_counter)
