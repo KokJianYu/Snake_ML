@@ -1,29 +1,39 @@
 import numpy as np
 import pandas as pd
 import math
+import random
+
 class GeneticAlgo:
     mutation_chance = 0.01
-    global best_fitness
-    best_fitness = 0
-    global best_snake_model
+    snake_to_retain = 5
+    global best_fitnesses
+    best_fitnesses = np.empty(1)
+    global best_snake_models
     global fitness_file
-    fitness_file = open("model/fitness.csv", "a")
+    fitness_file = open("generationInfo/fitness.csv", "a")
     def generatePopulation(self, n_population, n_weights):
+        global best_snake_models
+        best_snake_models = np.empty(n_weights)
         population_flatten = np.random.choice(
             np.arange(-1, 1, 0.1), size=n_population * n_weights)
         return np.reshape(population_flatten, (n_population, n_weights))
 
-    def updateBestSnake(self, current_population, population_fitness):
-        global best_fitness
-        global best_snake_model
+    def updateBestSnakes(self, current_population, population_fitness):
+        global best_fitnesses
+        global best_snake_models
         global fitness_file
+        if(len(population_fitness) < self.snake_to_retain):
+            self.snake_to_retain = len(population_fitness)
         n_weights = np.asarray(current_population).shape[1]
-        population_best_fitness_idx = np.argmax(population_fitness)
-        if best_fitness < population_fitness[population_best_fitness_idx]:
-            best_fitness = population_fitness[population_best_fitness_idx]
-            best_snake_model = np.reshape(current_population[population_best_fitness_idx],(1, n_weights))
-        df = pd.DataFrame(np.reshape(population_fitness[population_best_fitness_idx], (1, 1)))
-        df.to_csv(fitness_file, header=None, index=None)
+        population_best_fitnesses_idx = np.argpartition(population_fitness, -self.snake_to_retain)[-self.snake_to_retain:]
+        for i in range(self.snake_to_retain):
+            best_fitnesses = np.append(best_fitnesses, population_fitness[population_best_fitnesses_idx[i]])
+            best_snake_models = np.vstack((best_snake_models, np.reshape(current_population[population_best_fitnesses_idx[i]],(1, n_weights))))
+
+        best_fitnesses_idx = np.argpartition(best_fitnesses, -self.snake_to_retain)[-self.snake_to_retain:]
+        best_fitnesses = best_fitnesses[best_fitnesses_idx]
+        best_snake_models = best_snake_models[best_fitnesses_idx]
+
 
     def getNextGeneration(self, current_population, population_fitness, n_population=-1):
         n_weights = np.asarray(current_population).shape[1]
@@ -33,12 +43,13 @@ class GeneticAlgo:
         if n_population == -1:
             n_population = np.asarray(current_population).shape[0]
 
-        global best_snake_model
-        self.updateBestSnake(current_population, population_fitness)
+        global best_snake_models
+        self.updateBestSnakes(current_population, population_fitness)
         child_population = np.zeros((n_population, n_weights))
-        child_population[0, :] = best_snake_model
+        for i in range(self.snake_to_retain):
+            child_population[i, :] = best_snake_models[i]
 
-        for i in range(1, n_population):
+        for i in range(5, n_population):
             parent1 = self.selectParent(current_population, population_fitness)
             parent2 = self.selectParent(current_population, population_fitness)
             child_population[i, :] = self.crossBreed(parent1, parent2)
@@ -47,7 +58,7 @@ class GeneticAlgo:
 
     def selectParent(self, current_population, population_fitness):
         total_fitness = math.floor(np.sum(population_fitness))
-        chosen_fitness = np.random.randint(0, total_fitness, size=1)
+        chosen_fitness = random.randint(0, total_fitness)
         sum_fitness = 0
         for i in range(0, len(population_fitness)):
             sum_fitness += population_fitness[i]
@@ -63,14 +74,12 @@ class GeneticAlgo:
         n_child_population = child_population.shape[0]
         n_child_weights = child_population.shape[1]
         num_of_mutation = int((n_child_population * n_child_weights) // (self.mutation_chance ** -1))
-
-        #Do not mutate first child!
-        x = np.random.choice(range(1, n_child_population), num_of_mutation, replace=True)
-        y = np.random.choice(range(0, n_child_weights), num_of_mutation, replace=True)
-        for i in range(0, num_of_mutation):
-            mutation = np.random.normal(0, 1, size=1)
-            child_population[x[i], y[i]] = mutation
-            #print(f"{x[i]},{y[i]} mutated by {mutation}")
+        
+        for i in range(1, n_child_population):
+            for j in range(0, n_child_weights):
+                if np.random.random_sample() < self.mutation_chance:
+                    mutation = np.random.normal(0, 1, size=1)
+                    child_population[i, j] = mutation
         return child_population
 
 
@@ -78,7 +87,7 @@ class MainStub:
 
     def runTest(self):
         genes = GeneticAlgo()
-        n_pop = 4
+        n_pop = 10
         n_weight = 20
         init_population = genes.generatePopulation(n_pop, n_weight)
         print(init_population)
