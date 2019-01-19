@@ -14,8 +14,13 @@ class DeepQNetworkAgent(object):
         self.epsilonDecay = 0.01
         self.memory = [] #Used to store [oldState, action, reward, newState, gameEnded]
         self.reward = 0
-        self.discount = 0.9
+        self.discount = 0.85
 
+
+    def explorationEpsilonDecay(self):
+        self.explorationEpsilon -= self.epsilonDecay
+        if(self.explorationEpsilon < 0.01):
+            self.explorationEpsilon = 0.01
 
     def createModel(self, weights=None):
         model = keras.Sequential()
@@ -25,17 +30,17 @@ class DeepQNetworkAgent(object):
         model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(30, activation="relu"))
         model.add(keras.layers.Dropout(0.15))
-        model.add(keras.layers.Dense(3, activation="softmax"))
+        model.add(keras.layers.Dense(3))
         opt = keras.optimizers.Adam(self.learningRate)
         model.compile(loss="mse", optimizer=opt)
 
         return model
 
-    def setReward(self, hasEaten, isDead):
+    def setReward(self, hasEaten, gameEnded):
         self.reward = 0
         if hasEaten:
             self.reward = 10
-        if isDead:
+        if gameEnded:
             self.reward = -10
         return self.reward
 
