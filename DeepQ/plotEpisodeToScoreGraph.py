@@ -10,13 +10,10 @@ SIZE_INPUT_LAYER = 14
 #Model is hardcoded. Change to be identical to model in DeepQNetwork.py
 model = keras.Sequential()
 model.add(keras.layers.Dense(30, activation="relu", input_dim=SIZE_INPUT_LAYER))
-model.add(keras.layers.Dropout(0.15))
 model.add(keras.layers.Dense(30, activation="relu"))
-model.add(keras.layers.Dropout(0.15))
 model.add(keras.layers.Dense(30, activation="relu"))
-model.add(keras.layers.Dropout(0.15))
 model.add(keras.layers.Dense(3, activation="softmax"))
-opt = keras.optimizers.Adam(0.01)
+opt = keras.optimizers.Adam(0.0005)
 model.compile(loss="mse", optimizer=opt)
 
 PATH = f"model/"
