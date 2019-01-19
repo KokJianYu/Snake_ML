@@ -52,12 +52,12 @@ for i in range(len(files)):
 
 
 def plot_seaborn(array_counter, array_score):
-    generation = np.array(array_counter)
+    episodes = np.array(array_counter)
     scores = np.array(array_score)
-    data = {"generation": generation, "scores": scores}
-    df = pd.DataFrame(data)
-    sns.set(color_codes=True)
-    sns.lineplot(x="generation", y="scores", data=df)
+    z = np.polyfit(episodes, scores, 3)
+    p = np.poly1d(z)
+    scores_new = p(episodes)
+    plt.plot(episodes, scores, 'o', episodes, scores_new)
     plt.show()
 
 
