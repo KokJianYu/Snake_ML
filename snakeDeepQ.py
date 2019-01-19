@@ -19,10 +19,11 @@ def gameInit(agentDQN, displayUI=False):
 def run():
     agentDQN = DeepQNetworkAgent()
     current_episode = 0
-    max_episode = 201
+    max_episode = 401
     for current_episode in range(max_episode):
         gameInit(agentDQN, displayUI=False) #change boolean to display UI
-        agentDQN.explorationEpsilon = agentDQN.explorationEpsilon - agentDQN.epsilonDecay
+        #Decrease exploration epsilon after every episode
+        agentDQN.explorationEpsilonDecay()
         while not snakeML.gameEnded:
             
             state_1 = np.reshape(snakeML.getInputLayer(), (1, SIZE_INPUT_LAYER))
