@@ -1,6 +1,8 @@
 # Snake_ML
 
-A basic snake game, with an AI player that is trained with Machine Learning. 
+Snake game AI trained with 2 different machine learning algorithms. Coded with python using keras.
 
-Currently work in progress! Stay tuned.
+* Deep Q-Learning
+* Genetic Algorithm
 
+More information can be found in their specific directory.

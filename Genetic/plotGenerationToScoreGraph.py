@@ -1,4 +1,4 @@
-import keras
+from tensorflow import keras
 import snakeML
 import numpy as np
 import os
@@ -9,15 +9,6 @@ import pandas as pd
 # This class is used to plot out the performance of each snake generation trained by genetic algorithm
 
 SIZE_INPUT_LAYER = 14
-# Model is hard coded. Change here if you modified it in main.py
-model = keras.Sequential()
-model.add(keras.layers.Dense(30, activation="relu", input_dim=SIZE_INPUT_LAYER))
-model.add(keras.layers.Dense(30, activation="relu"))
-model.add(keras.layers.Dense(30, activation="relu"))
-model.add(keras.layers.Dense(3, activation="softmax"))
-# Don't actually need compile model since we are not training anything
-opt = keras.optimizers.Adam(0.0005)
-model.compile(loss="mse", optimizer=opt)
 
 PATH = f"model/"
 GAMES_PER_GENERATION = 10
@@ -27,7 +18,7 @@ score_plot = []
 generation_plot = []
 for i in range(len(files)):
     weightsToUse = f"{PATH}{files[i]}"
-    model.load_weights(weightsToUse)
+    model = keras.models.load_model(weightsToUse)
     totalScore = 0
     for j in range(GAMES_PER_GENERATION):
         score = 0
@@ -52,12 +43,14 @@ for i in range(len(files)):
 
 
 def plot_seaborn(array_counter, array_score):
-    episodes = np.array(array_counter)
+    generation = np.array(array_counter)
     scores = np.array(array_score)
-    z = np.polyfit(episodes, scores, 3)
+    z = np.polyfit(generation, scores, 3)
     p = np.poly1d(z)
-    scores_new = p(episodes)
-    plt.plot(episodes, scores, 'o', episodes, scores_new)
+    scores_new = p(generation)
+    plt.xlabel("Generation")
+    plt.ylabel("Score")
+    plt.plot(generation, scores, 'o', generation, scores_new)
     plt.show()
 
 

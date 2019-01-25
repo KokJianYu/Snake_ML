@@ -1,4 +1,4 @@
-import keras
+from tensorflow import keras
 import snakeML
 import numpy as np
 import os
@@ -7,14 +7,6 @@ import seaborn as sns
 import pandas as pd
 
 SIZE_INPUT_LAYER = 14
-#Model is hardcoded. Change to be identical to model in DeepQNetwork.py
-model = keras.Sequential()
-model.add(keras.layers.Dense(30, activation="relu", input_dim=SIZE_INPUT_LAYER))
-model.add(keras.layers.Dense(30, activation="relu"))
-model.add(keras.layers.Dense(30, activation="relu"))
-model.add(keras.layers.Dense(3, activation="softmax"))
-opt = keras.optimizers.Adam(0.0005)
-model.compile(loss="mse", optimizer=opt)
 
 PATH = f"model/"
 GAMES_PER_EPISODE = 10
@@ -24,7 +16,8 @@ score_plot = []
 episode_plot = []
 for i in range(len(files)):
     weightsToUse = f"{PATH}{files[i]}"
-    model.load_weights(weightsToUse)
+    #model.load_model(weightsToUse)
+    model = keras.models.load_model(weightsToUse)
     totalScore = 0
     for j in range(GAMES_PER_EPISODE):
         score = 0
@@ -54,6 +47,8 @@ def plot_seaborn(array_counter, array_score):
     p = np.poly1d(z)
     scores_new = p(episodes)
     plt.plot(episodes, scores, 'o', episodes, scores_new)
+    plt.xlabel("Episode")
+    plt.ylabel("Score")
     plt.show()
     # data = {"episodes": episodes, "scores": scores}
     # df = pd.DataFrame(data)

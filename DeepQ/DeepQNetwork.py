@@ -1,4 +1,4 @@
-import keras
+from tensorflow import keras
 import numpy as np
 import pandas as pd
 import random
@@ -25,11 +25,11 @@ class DeepQNetworkAgent(object):
     def createModel(self, weights=None):
         model = keras.Sequential()
         model.add(keras.layers.Dense(30, activation="relu", input_dim=SIZE_INPUT_LAYER))
-        model.add(keras.layers.Dropout(0.15))
+        #model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(30, activation="relu"))
-        model.add(keras.layers.Dropout(0.15))
+        #model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(30, activation="relu"))
-        model.add(keras.layers.Dropout(0.15))
+       # model.add(keras.layers.Dropout(0.15))
         model.add(keras.layers.Dense(3))
         opt = keras.optimizers.Adam(self.learningRate)
         model.compile(loss="mse", optimizer=opt)

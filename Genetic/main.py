@@ -1,4 +1,4 @@
-import keras
+from tensorflow import keras
 import snakeML
 import matplotlib.pyplot as plt
 import numpy as np
