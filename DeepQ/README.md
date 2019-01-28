@@ -21,9 +21,16 @@ The output layer consists of the following possible actions the snake can take:
 * Move left
 * Move front
 * Move right
-* 
+  
+## Running Instructions
+You can train the snake AI model by running `main.py`.
+
+Performance of pretrained models can be viewed by running `plotEpisodeToScoreGraph.py`.
+
+By default, the Snake game GUI will not be shown. The boolean `SHOW_GUI` in both of this file can be changed to `True` to display GUI.
+
 ## Results
-I have trained the AI for 400 episodes, with the performance of it compiled in the following graph. 
+I have trained the AI for 400 episodes,  with the average score of 10 games for every 10 episodes of the AI compiled in the following graph. 
 
 ![Graph of performance](image/Figure_1.png)
 

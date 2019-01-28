@@ -12,6 +12,7 @@ SIZE_INPUT_LAYER = 14
 
 PATH = f"model/"
 GAMES_PER_GENERATION = 10
+# Change this boolean to true to display gui
 SHOW_GUI = False
 files = os.listdir(PATH)
 score_plot = []

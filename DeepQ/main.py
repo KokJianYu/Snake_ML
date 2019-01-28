@@ -4,9 +4,13 @@ import numpy as np
 
 SIZE_INPUT_LAYER = 14
 
-def gameInit(agentDQN, displayUI=False):
+# Change this boolean to true to display gui
+showGui = False
+
+
+def gameInit(agentDQN, showGui=False):
     snakeML.newGameML()
-    snakeML.startGameML(showGui=displayUI)
+    snakeML.startGameML(showGui=showGui)
     state_1 = np.reshape(snakeML.getInputLayer(), (1, SIZE_INPUT_LAYER))
     action = 1
     foodAte, gameEnded = snakeML.nextStep(1)
@@ -21,7 +25,7 @@ def run():
     current_episode = 0
     max_episode = 401
     for current_episode in range(max_episode):
-        gameInit(agentDQN, displayUI=False) #change boolean to display UI
+        gameInit(agentDQN, showGui=showGui) #change boolean to display UI
         #Decrease exploration epsilon after every episode
         agentDQN.explorationEpsilonDecay()
         while not snakeML.gameEnded:

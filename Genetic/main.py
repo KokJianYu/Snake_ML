@@ -79,6 +79,8 @@ def buildModel(input_layer_units, hidden_layers_units, output_layer_units):
 isResumeTraining = False
 generationToResumeFrom = 0
 
+showGui = False
+
 # Set up UI for running genetic Algo
 scoreScreenMaster = tkinter.Tk()
 scoreScreenCanvas = tkinter.Canvas(
@@ -123,7 +125,7 @@ for i in range(generationToResumeFrom, num_of_gens):
             population[j], input_layer_units, hidden_layers_units, output_layer_units)
         model.set_weights(weights)
         snakeML.newGameML()
-        snakeML.startGameML(showGui=False)
+        snakeML.startGameML(showGui=showGui)
         game_ended = False
         num_steps = 0
         while not game_ended and (num_steps < max_steps):
