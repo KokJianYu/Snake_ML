@@ -29,7 +29,7 @@ You can train the snake AI model by running `main.py`.
 
 Performance of pretrained models can be viewed by running `plotGenerationToScoreGraph.py`.
 
-By default, the Snake game GUI will not be shown. The boolean `SHOW_GUI` in both of this file can be changed to `True` to display GUI.
+By default, the Snake game GUI will not be shown. The boolean `SHOW_GUI` in both of the files can be changed to `True` to display GUI.
 
 ## Results
 I have trained the AI for 40 generations, with the average score of 10 games for each generation of AI compiled in the following graph. 
