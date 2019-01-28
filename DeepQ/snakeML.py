@@ -300,7 +300,7 @@ def gameLoopML():
     master.update()
     global displaySnakeCanvas
     if displaySnakeCanvas:
-        time.sleep(0.01)
+        time.sleep(0.05)
 
 
 def exit():

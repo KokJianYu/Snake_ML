@@ -5,7 +5,7 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-
+import time
 # This class is used to plot out the performance of each snake generation trained by genetic algorithm
 
 SIZE_INPUT_LAYER = 14

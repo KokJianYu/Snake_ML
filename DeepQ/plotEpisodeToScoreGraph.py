@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+
 SIZE_INPUT_LAYER = 14
 
 PATH = f"model/"
